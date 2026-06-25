@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>手機直式滿版 - 網頁象棋</title>
+    <title>AI 求生進化版 - 網頁象棋</title>
     <style>
         :root {
-            /* 💡 終極滿版公式：96vw (螢幕寬度96%) 除以 9.7 (9格欄位+左右內距) */
             --sz: min(calc(96vw / 9.7), 65px); 
             --pad: calc(var(--sz) * 0.35); 
         }
@@ -20,8 +19,8 @@
             font-family: "Microsoft JhengHei", Arial, sans-serif;
             background-color: #f0f0f0; display: flex; flex-direction: column;
             align-items: center; margin: 0; padding: 2vh 0;
-            overflow-x: hidden; /* 徹底禁止左右滑動 */
-            touch-action: manipulation; /* 增強點擊反應 */
+            overflow-x: hidden; 
+            touch-action: manipulation; 
         }
         
         #game-container { 
@@ -140,7 +139,7 @@
     <div id="game-container">
         <div class="status" id="status-text">目前輪到：紅方 (玩家)</div>
         <p class="hint-text">
-            手機直立滿版介面已啟用！棋盤將自動適應您的螢幕寬度。
+            AI 戰略再升級：懂得害怕 50% 反殺風險！被將軍時優先選擇安全閃避，不再無腦吃子賭命。
         </p>
         
         <div class="board" id="board">
@@ -396,12 +395,28 @@
 
             if (isMaximizingPlayer) {
                 let maxEval = -Infinity;
+                const inCheck = checkIsUnderAttack(board, 'b'); // 確認 AI 盤面上是否被將軍
+
                 for (let move of moves) {
                     let tempBoard = cloneBoard(board);
+                    const targetPiece = tempBoard[move.er][move.ec];
+                    const pieceType = board[move.sr][move.sc].charAt(1);
+                    const isCapture = targetPiece !== '';
+
                     tempBoard[move.er][move.ec] = tempBoard[move.sr][move.sc];
                     tempBoard[move.sr][move.sc] = '';
 
                     let ev = minimax(tempBoard, depth - 1, alpha, beta, false);
+
+                    // 💡 核心優化：恐懼 50% 反殺的風險機制
+                    if (isCapture) {
+                        if (pieceType === '將') {
+                            ev -= 80000; // 絕對禁止拿主帥去賭命吃子
+                        } else if (inCheck) {
+                            ev -= 50000; // 被將軍時，吃子解將有 50% 機率直接暴斃，給予極端懲罰強迫閃避
+                        }
+                    }
+
                     maxEval = Math.max(maxEval, ev);
                     alpha = Math.max(alpha, ev);
                     if (beta <= alpha) break; 
@@ -451,14 +466,25 @@
                 if (!bestMove) {
                     const moves = generateAllMoves(boardState, 'b');
                     moves.sort(() => Math.random() - 0.5);
+                    const inCheck = checkIsUnderAttack(boardState, 'b');
 
                     for (let move of moves) {
                         let tempBoard = cloneBoard(boardState);
+                        const targetPiece = tempBoard[move.er][move.ec];
+                        const pieceType = boardState[move.sr][move.sc].charAt(1);
+                        const isCapture = targetPiece !== '';
+
                         tempBoard[move.er][move.ec] = tempBoard[move.sr][move.sc];
                         tempBoard[move.sr][move.sc] = '';
 
-                        // 💡 維持 AI 高智商預判深度 2
+                        // 深度設定為 2
                         let boardValue = minimax(tempBoard, 2, -Infinity, Infinity, false);
+
+                        // 💡 根節點也要同步套用風險懲罰
+                        if (isCapture) {
+                            if (pieceType === '將') boardValue -= 80000;
+                            else if (inCheck) boardValue -= 50000;
+                        }
 
                         if (boardValue > bestValue) {
                             bestValue = boardValue;
