@@ -2,40 +2,75 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>高智商 AI 版 - 網頁象棋</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>手機滿版終極版 - 網頁象棋</title>
     <style>
+        /* 定義自適應的尺寸變數 */
+        :root {
+            /* 讓棋盤格根據螢幕寬度變化，最大不超過 60px */
+            --sz: clamp(30px, 10vw, 60px); 
+            /* 棋盤的內距 (Padding) */
+            --pad: calc(var(--sz) * 0.35); 
+        }
+
+        /* 消除手機點擊按鈕時的灰色閃爍框 */
+        * { -webkit-tap-highlight-color: transparent; }
+
         body {
             font-family: "Microsoft JhengHei", Arial, sans-serif;
             background-color: #f0f0f0; display: flex; flex-direction: column;
-            align-items: center; margin: 0; padding: 20px;
+            align-items: center; margin: 0; padding: 10px 0;
+            touch-action: manipulation; /* 增強手機點擊手感 */
         }
-        #game-container { display: flex; flex-direction: column; align-items: center; }
+        
+        #game-container { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        
         .status {
-            font-size: 24px; font-weight: bold; margin-bottom: 20px;
+            font-size: clamp(18px, 5vw, 24px); 
+            font-weight: bold; margin-bottom: 10px;
             background: #fff; padding: 10px 30px; border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             transition: background-color 0.3s;
         }
-        .thinking { background: #ffeaa7; color: #d35400 !important; } /* AI思考時的背景色 */
+        .thinking { background: #ffeaa7; color: #d35400 !important; } 
         
+        .hint-text {
+            font-size: clamp(12px, 3.5vw, 14px);
+            color: #666; margin-top: -5px; margin-bottom: 15px;
+            text-align: center; padding: 0 10px;
+        }
+
         .board {
-            display: grid; grid-template-columns: repeat(9, 60px); grid-template-rows: repeat(10, 60px);
-            background-color: #e3c498; padding: 20px; position: relative;
+            display: grid; 
+            grid-template-columns: repeat(9, var(--sz)); 
+            grid-template-rows: repeat(10, var(--sz));
+            background-color: #e3c498; padding: var(--pad); position: relative;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3); border-radius: 5px;
         }
+
         .board-border {
-            position: absolute; top: 50px; left: 50px; width: 480px; height: 540px;
-            border: 3px solid #333; pointer-events: none; z-index: 1;
+            position: absolute; 
+            top: calc(var(--pad) + var(--sz) / 2); 
+            left: calc(var(--pad) + var(--sz) / 2); 
+            width: calc(var(--sz) * 8); 
+            height: calc(var(--sz) * 9);
+            border: 2px solid #333; pointer-events: none; z-index: 1;
         }
+
         .river-text {
-            position: absolute; top: 290px; left: 50px; width: 480px; height: 60px;
+            position: absolute; 
+            top: calc(var(--pad) + var(--sz) * 4.5); 
+            left: calc(var(--pad) + var(--sz) / 2); 
+            width: calc(var(--sz) * 8); 
+            height: var(--sz);
             display: flex; justify-content: center; align-items: center;
-            font-size: 28px; font-family: "KaiTi", "標楷體", serif;
-            letter-spacing: 40px; color: #444; pointer-events: none; z-index: 1;
+            font-size: calc(var(--sz) * 0.45); 
+            font-family: "KaiTi", "標楷體", serif;
+            letter-spacing: calc(var(--sz) * 0.6); color: #444; pointer-events: none; z-index: 1;
         }
+
         .cell {
-            width: 60px; height: 60px; display: flex; justify-content: center;
+            width: var(--sz); height: var(--sz); display: flex; justify-content: center;
             align-items: center; position: relative; z-index: 2;
         }
         .cell::before {
@@ -46,6 +81,7 @@
         .cell[data-c="8"]::before { border-top: none; }
         .cell[data-r="9"]::before { border-left: none; }
         .cell[data-r="4"]::before { border-left: none; }
+        
         .diag-right::after {
             content: ""; position: absolute; top: 50%; left: 50%;
             width: 282.84%; height: 1px; background-color: #7a5e3a;
@@ -56,16 +92,18 @@
             width: 282.84%; height: 1px; background-color: #7a5e3a;
             transform-origin: left top; transform: rotate(135deg); z-index: -1;
         }
+
         .piece {
-            width: 50px; height: 50px; border-radius: 50%; background-color: #ffebcd;
+            width: calc(var(--sz) * 0.85); height: calc(var(--sz) * 0.85); 
+            border-radius: 50%; background-color: #ffebcd;
             border: 2px solid #333; display: flex; justify-content: center; align-items: center;
-            font-size: 24px; font-family: "KaiTi", "標楷體", serif; font-weight: bold; cursor: pointer;
+            font-size: calc(var(--sz) * 0.4); font-family: "KaiTi", "標楷體", serif; font-weight: bold; cursor: pointer;
             box-shadow: 2px 2px 4px rgba(0,0,0,0.4); user-select: none; z-index: 10;
             transition: transform 0.1s;
         }
         .piece.red { color: #c00; border-color: #c00; }
         .piece.black { color: #000; border-color: #000; }
-        .piece.selected { box-shadow: 0 0 12px 4px #00f; transform: translateY(-5px) scale(1.1); }
+        .piece.selected { box-shadow: 0 0 10px 3px #00f; transform: translateY(-3px) scale(1.1); }
 
         #animation-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -81,9 +119,9 @@
             background: rgba(255,255,255,0.9); display: none; flex-direction: column;
             justify-content: center; align-items: center; z-index: 10000;
         }
-        #game-over-text { font-size: 40px; font-weight: bold; margin-bottom: 20px; text-align: center; }
+        #game-over-text { font-size: clamp(28px, 8vw, 40px); font-weight: bold; margin-bottom: 20px; text-align: center; }
         #restart-btn {
-            font-size: 20px; padding: 10px 30px; cursor: pointer; background: #c00; color: #fff;
+            font-size: clamp(16px, 5vw, 20px); padding: 10px 30px; cursor: pointer; background: #c00; color: #fff;
             border: none; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
 
@@ -97,8 +135,8 @@
 
     <div id="game-container">
         <div class="status" id="status-text">目前輪到：紅方 (玩家)</div>
-        <p style="font-size: 14px; color: #666; margin-top: -10px; margin-bottom: 20px;">
-            裝載 Minimax 引擎：AI 現在擁有預判未來的能力，會計算陷阱與反擊！
+        <p class="hint-text">
+            手機版自適應優化完畢！AI 對手預判深度為 2。
         </p>
         
         <div class="board" id="board">
@@ -140,7 +178,7 @@
         const statusText = document.getElementById('status-text');
 
         const pieceValues = {
-            '帥': 20000, '將': 20000, // 提高主帥價值，AI會拼死保衛
+            '帥': 20000, '將': 20000,
             '車': 1000,
             '炮': 500,
             '馬': 450,
@@ -286,17 +324,11 @@
             return false;
         }
 
-        // --- Minimax 專用輔助函數 ---
-        // 快速複製盤面 (效能優化)
-        function cloneBoard(b) {
-            return b.map(row => [...row]);
-        }
+        function cloneBoard(b) { return b.map(row => [...row]); }
 
-        // 生成該陣營的所有合法步伐
         function generateAllMoves(board, side) {
             let moves = [];
             const enemySide = side === 'r' ? 'b' : 'r';
-
             for (let r = 0; r < 10; r++) {
                 for (let c = 0; c < 9; c++) {
                     const piece = board[r][c];
@@ -308,7 +340,6 @@
                                     let temp = cloneBoard(board);
                                     temp[tr][tc] = piece;
                                     temp[r][c] = '';
-                                    // 必須不違規且不能讓自己的主帥送死
                                     if (!isGeneralsFacing(temp) && !checkIsUnderAttack(temp, enemySide)) {
                                         moves.push({ sr: r, sc: c, er: tr, ec: tc });
                                     }
@@ -321,7 +352,6 @@
             return moves;
         }
 
-        // 靜態盤面評估函數 (AI 是黑方，黑方越高分越好)
         function evaluateBoard(board) {
             let score = 0;
             for (let r = 0; r < 10; r++) {
@@ -333,21 +363,19 @@
                     const type = piece.charAt(1);
                     let val = pieceValues[type];
 
-                    // 陣地附加價值
                     if (type === '卒' || type === '兵') {
-                        if ((side === 'b' && r >= 5) || (side === 'r' && r <= 4)) val += 30; // 過河價值提升
+                        if ((side === 'b' && r >= 5) || (side === 'r' && r <= 4)) val += 30; 
                     }
                     if (type === '車') {
-                        if (r !== 0 && r !== 9) val += 20; // 車出動
+                        if (r !== 0 && r !== 9) val += 20; 
                     }
                     if (type === '馬') {
-                        if (r !== 0 && r !== 9) val += 10; // 馬出動
+                        if (r !== 0 && r !== 9) val += 10; 
                         const centerDist = Math.abs(c - 4);
-                        val += (4 - centerDist) * 3; // 馬越靠中間越強
+                        val += (4 - centerDist) * 3; 
                     }
-                    if (type === '炮' && c === 4) val += 15; // 中炮控制
+                    if (type === '炮' && c === 4) val += 15; 
 
-                    // 結算：黑方加分，紅方扣分
                     if (side === 'b') score += val;
                     else score -= val;
                 }
@@ -355,31 +383,24 @@
             return score;
         }
 
-        // ★ Minimax 核心演算法 (附帶 Alpha-Beta 剪枝) ★
         function minimax(board, depth, alpha, beta, isMaximizingPlayer) {
-            // 到達深度極限，直接回傳當前盤面分數
             if (depth === 0) return evaluateBoard(board);
-
             const side = isMaximizingPlayer ? 'b' : 'r';
             const moves = generateAllMoves(board, side);
-
-            // 如果沒有步可以走 (被將死)，直接回傳極值
-            if (moves.length === 0) {
-                return isMaximizingPlayer ? -99999 : 99999;
-            }
+            
+            if (moves.length === 0) return isMaximizingPlayer ? -99999 : 99999;
 
             if (isMaximizingPlayer) {
                 let maxEval = -Infinity;
                 for (let move of moves) {
                     let tempBoard = cloneBoard(board);
-                    // AI 的思考中，假設吃子必定成功 (極度貪婪與侵略)
                     tempBoard[move.er][move.ec] = tempBoard[move.sr][move.sc];
                     tempBoard[move.sr][move.sc] = '';
 
                     let ev = minimax(tempBoard, depth - 1, alpha, beta, false);
                     maxEval = Math.max(maxEval, ev);
                     alpha = Math.max(alpha, ev);
-                    if (beta <= alpha) break; // Alpha-Beta 剪枝：這條路線太爛，不用算了
+                    if (beta <= alpha) break; 
                 }
                 return maxEval;
             } else {
@@ -392,46 +413,39 @@
                     let ev = minimax(tempBoard, depth - 1, alpha, beta, true);
                     minEval = Math.min(minEval, ev);
                     beta = Math.min(beta, ev);
-                    if (beta <= alpha) break; // Alpha-Beta 剪枝
+                    if (beta <= alpha) break; 
                 }
                 return minEval;
             }
         }
 
-        // --- AI 啟動入口 ---
         function playAITurn() {
             if (isGameOver || currentTurn !== 'b') return;
 
-            // 改變 UI 狀態，提示玩家 AI 正在計算未來
             statusText.innerText = "目前輪到：黑方 (AI 深度預判中...)";
             statusText.classList.add('thinking');
 
-            // 使用 setTimeout 讓瀏覽器有時間先渲染上面的文字，再進入阻斷式的運算
             setTimeout(() => {
                 let bestMove = null;
                 let bestValue = -Infinity;
                 
-                // 開局庫：前兩步還是照搬大師套路，省下運算資源並穩固陣地
                 if (aiMoveCount === 0) {
                     const openings = [
-                        { sr: 2, sc: 1, er: 2, ec: 4 }, // 左炮平中
-                        { sr: 2, sc: 7, er: 2, ec: 4 }, // 右炮平中
-                        { sr: 0, sc: 1, er: 2, ec: 2 }, // 左馬正起
-                        { sr: 0, sc: 7, er: 2, ec: 6 }  // 右馬正起
+                        { sr: 2, sc: 1, er: 2, ec: 4 }, 
+                        { sr: 2, sc: 7, er: 2, ec: 4 }, 
+                        { sr: 0, sc: 1, er: 2, ec: 2 }, 
+                        { sr: 0, sc: 7, er: 2, ec: 6 }  
                     ];
                     openings.sort(() => Math.random() - 0.5);
                     for (let op of openings) {
                         if (isValidMove(boardState, op.sr, op.sc, op.er, op.ec, 'b', boardState[op.sr][op.sc].charAt(1))) {
-                            bestMove = op;
-                            break;
+                            bestMove = op; break;
                         }
                     }
                 }
 
-                // 如果不是第一步，或者開局庫無法使用，啟動 Minimax 搜尋！
                 if (!bestMove) {
                     const moves = generateAllMoves(boardState, 'b');
-                    // 打亂陣列，當分數一樣時 AI 走法才不會死板
                     moves.sort(() => Math.random() - 0.5);
 
                     for (let move of moves) {
@@ -439,8 +453,7 @@
                         tempBoard[move.er][move.ec] = tempBoard[move.sr][move.sc];
                         tempBoard[move.sr][move.sc] = '';
 
-                        // ★ 深度設定：depth = 1 代表預判「AI 走完 -> 玩家走一步 -> 評價結果」
-                        // 雖然寫的是 1，但實質上就是看透了「未來的 2 個回合交替」
+                        // ★ 在此調整深度：目前設定為 2 (AI 將變得非常聰明)
                         let boardValue = minimax(tempBoard, 2, -Infinity, Infinity, false);
 
                         if (boardValue > bestValue) {
@@ -450,7 +463,6 @@
                     }
                 }
 
-                // 恢復 UI 狀態
                 statusText.classList.remove('thinking');
 
                 if (bestMove) {
@@ -459,7 +471,7 @@
                     setTimeout(() => {
                         aiMoveCount++; 
                         handleCellClick(bestMove.er, bestMove.ec, false); 
-                    }, 400); // 動作演示停頓
+                    }, 400); 
                 } else {
                     isGameOver = true;
                     const overOverlay = document.getElementById('game-over-overlay');
@@ -468,10 +480,9 @@
                     textEl.style.color = '#c00';
                     overOverlay.style.display = 'flex';
                 }
-            }, 50); // 讓 UI 刷新
+            }, 50); 
         }
 
-        // --- 動畫與點擊核心 ---
         function playGif(filename, duration, fallbackAlertText, callback) {
             const overlay = document.getElementById('animation-overlay');
             const img = document.getElementById('animation-img');
@@ -623,6 +634,7 @@
 
                 if (isKingCaptured || isAttackingKingKilled || isMyKingDoomed) {
                     isGameOver = true;
+                    
                     let winnerText;
                     let reasonText = "";
 
